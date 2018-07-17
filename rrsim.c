@@ -7,6 +7,7 @@
 #define MAX_BUFFER_LEN 80
 
 taskval_t *event_list = NULL;
+taskval_t *task = NULL;
 
 int tick, quantum_size, dispatch_size; // all will be initialized in run_simulation fn
 int d_count = 0; // keep track of ticks that have been spent dispatching.
@@ -38,14 +39,28 @@ void increment_count(taskval_t *t, void *arg) {
 
 // do the heavy lifting here based on what our status int is set to.
 void simulate() {
-    switch(tick) {
-        case 0: // idle
-            break;
+    switch(status) {
         case 1: // dispatch
+            if (d_count == dispatch_size - 1) {
+                d_count = 0;
+                status = 2;
+                printf("id=%d req=%.00f used=%.00f\n", task->id, task->cpu_request, task->cpu_used);
+            } else {
+                d_count++;
+            }
             break;
         case 2: // quantum
+            task->cpu_used++;
+            printf("id=%d req=%.00f used=%.00f\n", task->id, task->cpu_request, task->cpu_used);
             break;
+        case 0: // idle
         default:
+            if (task == NULL) {
+                printf("IDLE\n");
+            } else {
+                printf("DISPATCHING\n");
+                status = 1;
+            }
             break;
     }
 }
@@ -58,9 +73,14 @@ void run_simulation(int qlen, int dlen) {
     printf("The first item in event_list: %d %d %f\n", event_list->id, event_list->arrival_time, event_list->cpu_request);
 
     for(tick = 0; tick < 20; tick++) {
-        simulate();
+        printf("[%05d] ", tick); // start by outputting the tick...
 
-        printf("[%05d] %s\n", tick, status);
+        if (tick == event_list->arrival_time) {
+            task = peek_front(event_list);
+            event_list = remove_front(event_list);
+        }
+
+        simulate(); // output will finish here.
     }
 }
 
