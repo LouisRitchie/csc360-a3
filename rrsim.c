@@ -39,29 +39,28 @@ void increment_count(taskval_t *t, void *arg) {
 // do the heavy lifting here based on what our status int is set to.
 void simulate(taskval_t *ready_q) {
     taskval_t *task = peek_front(ready_q->next); // store current task
-    if (task == NULL) {
-        puts("task is null, boys...\n");
-    }
+
     switch(status) {
         case 1: // dispatch
             if (d_count == dispatch_size - 1) {
                 d_count = 0;
                 status = 2;
-                printf("id=%d req=%.00f used=%.00f\n", task->id, task->cpu_request, task->cpu_used);
+                printf("id=%d req=%.2f used=%.2f\n", task->id, task->cpu_request, task->cpu_used);
             } else {
                 d_count++;
+                puts("DISPATCHING");
             }
             break;
         case 2: // quantum
             task->cpu_used++;
-            printf("id=%d req=%.00f used=%.00f\n", task->id, task->cpu_request, task->cpu_used);
+            printf("id=%d req=%.2f used=%.2f\n", task->id, task->cpu_request, task->cpu_used);
             break;
         case 0: // idle
         default:
             if (task == NULL) {
-                puts("IDLE\n");
+                puts("IDLE");
             } else {
-                puts("DISPATCHING\n");
+                puts("DISPATCHING");
                 status = 1;
             }
             break;
@@ -77,14 +76,9 @@ void run_simulation(int qlen, int dlen) {
 
     for(tick = 0; tick < 20; tick++) {
         printf("[%05d] ", tick); // start by outputting the tick...
-        puts("after the tick output.");
-
-        if (event_list == NULL) {
-            puts("Event list is null.");
-        }
 
         if (tick == event_list->arrival_time) {
-            puts("setting current task\n");
+            puts("adding a task to the ready queue");
 
             taskval_t *temp_task;
             temp_task = new_task();
