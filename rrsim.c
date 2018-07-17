@@ -38,27 +38,44 @@ void increment_count(taskval_t *t, void *arg) {
 
 // do the heavy lifting here based on what our status int is set to.
 taskval_t *simulate(taskval_t *ready_q) {
-    taskval_t *task = peek_front(ready_q->next); // store current task
+    taskval_t *task = peek_front(ready_q); // store current task
 
     switch(status) {
         case 1: // dispatch
             if (d_count == dispatch_size - 1) {
                 d_count = 0;
                 status = 2;
-                printf("id=%d req=%.2f used=%.2f\n", task->id, task->cpu_request, task->cpu_used);
+                printf("id=%05d req=%.2f used=%.2f\n", task->id, task->cpu_request, task->cpu_used);
+                task->cpu_used++;
+                q_count++;
             } else {
                 d_count++;
                 puts("DISPATCHING");
             }
             break;
         case 2: // quantum
+            printf("id=%05d req=%.2f used=%.2f\n", task->id, task->cpu_request, task->cpu_used);
             task->cpu_used++;
-            printf("id=%d req=%.2f used=%.2f\n", task->id, task->cpu_request, task->cpu_used);
+
             if (task->cpu_used > task->cpu_request) {
-                printf("[%05d] EXIT w=%.2f ta=%.2f\n", tick, (float) tick - task->arrival_time - task->cpu_request, (float) tick - task->arrival_time);
+                printf("[%05d] id=%05d EXIT w=%.2f ta=%.2f\n",
+                    tick,
+                    task->id,
+                    (float) tick - task->arrival_time - task->cpu_request,
+                    (float) tick - task->arrival_time);
                 ready_q = remove_front(ready_q);
-                task = peek_front(ready_q->next);
+                q_count = 0;
                 status = 0;
+            } else if (q_count == quantum_size - 1) {
+                taskval_t *task_out = peek_front(ready_q);
+                ready_q = remove_front(ready_q);
+                ready_q = add_end(ready_q, task_out);
+
+                q_count = 0;
+                status = 0;
+                break;
+            } else {
+                q_count++;
             }
             break;
         case 0: // idle
@@ -76,18 +93,14 @@ taskval_t *simulate(taskval_t *ready_q) {
 }
 
 void run_simulation(int qlen, int dlen) {
-    taskval_t *ready_q = new_task();
+    taskval_t *ready_q = NULL;
     dispatch_size = dlen;
     quantum_size = qlen;
-
-    printf("The first item in event_list: %d %d %f\n", event_list->id, event_list->arrival_time, event_list->cpu_request);
 
     for(tick = 0; tick < 30; tick++) {
         printf("[%05d] ", tick); // start by outputting the tick...
 
         if (event_list != NULL && tick == event_list->arrival_time) {
-            printf("adding a task to the ready queue   ");
-
             taskval_t *temp_task;
             temp_task = new_task();
             temp_task->id = peek_front(event_list)->id;
@@ -95,7 +108,12 @@ void run_simulation(int qlen, int dlen) {
             temp_task->cpu_request = peek_front(event_list)->cpu_request;
             temp_task->cpu_used = 0.0;
 
-            add_end(ready_q, temp_task);
+            if (ready_q == NULL) {
+                ready_q = temp_task;
+            } else {
+                add_end(ready_q, temp_task);
+            }
+
             event_list = remove_front(event_list);
         }
 
