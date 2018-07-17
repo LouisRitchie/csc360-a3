@@ -7,7 +7,6 @@
 #define MAX_BUFFER_LEN 80
 
 taskval_t *event_list = NULL;
-taskval_t *task = NULL;
 
 int tick, quantum_size, dispatch_size; // all will be initialized in run_simulation fn
 int d_count = 0; // keep track of ticks that have been spent dispatching.
@@ -38,7 +37,11 @@ void increment_count(taskval_t *t, void *arg) {
 
 
 // do the heavy lifting here based on what our status int is set to.
-void simulate() {
+void simulate(taskval_t *ready_q) {
+    taskval_t *task = peek_front(ready_q->next); // store current task
+    if (task == NULL) {
+        puts("task is null, boys...\n");
+    }
     switch(status) {
         case 1: // dispatch
             if (d_count == dispatch_size - 1) {
@@ -56,9 +59,9 @@ void simulate() {
         case 0: // idle
         default:
             if (task == NULL) {
-                printf("IDLE\n");
+                puts("IDLE\n");
             } else {
-                printf("DISPATCHING\n");
+                puts("DISPATCHING\n");
                 status = 1;
             }
             break;
@@ -66,7 +69,7 @@ void simulate() {
 }
 
 void run_simulation(int qlen, int dlen) {
-    taskval_t *ready_q = NULL;
+    taskval_t *ready_q = new_task();
     dispatch_size = dlen;
     quantum_size = qlen;
 
@@ -74,13 +77,27 @@ void run_simulation(int qlen, int dlen) {
 
     for(tick = 0; tick < 20; tick++) {
         printf("[%05d] ", tick); // start by outputting the tick...
+        puts("after the tick output.");
+
+        if (event_list == NULL) {
+            puts("Event list is null.");
+        }
 
         if (tick == event_list->arrival_time) {
-            task = peek_front(event_list);
+            puts("setting current task\n");
+
+            taskval_t *temp_task;
+            temp_task = new_task();
+            temp_task->id = peek_front(event_list)->id;
+            temp_task->arrival_time = peek_front(event_list)->arrival_time;
+            temp_task->cpu_request = peek_front(event_list)->cpu_request;
+            temp_task->cpu_used = 0.0;
+
+            add_end(ready_q, temp_task);
             event_list = remove_front(event_list);
         }
 
-        simulate(); // output will finish here.
+        simulate(ready_q); // output will finish here.
     }
 }
 
