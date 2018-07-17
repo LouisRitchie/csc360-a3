@@ -37,7 +37,7 @@ void increment_count(taskval_t *t, void *arg) {
 
 
 // do the heavy lifting here based on what our status int is set to.
-void simulate(taskval_t *ready_q) {
+taskval_t *simulate(taskval_t *ready_q) {
     taskval_t *task = peek_front(ready_q->next); // store current task
 
     switch(status) {
@@ -54,6 +54,12 @@ void simulate(taskval_t *ready_q) {
         case 2: // quantum
             task->cpu_used++;
             printf("id=%d req=%.2f used=%.2f\n", task->id, task->cpu_request, task->cpu_used);
+            if (task->cpu_used > task->cpu_request) {
+                printf("[%05d] EXIT w=%.2f ta=%.2f\n", tick, (float) tick - task->arrival_time - task->cpu_request, (float) tick - task->arrival_time);
+                ready_q = remove_front(ready_q);
+                task = peek_front(ready_q->next);
+                status = 0;
+            }
             break;
         case 0: // idle
         default:
@@ -65,6 +71,8 @@ void simulate(taskval_t *ready_q) {
             }
             break;
     }
+
+    return ready_q;
 }
 
 void run_simulation(int qlen, int dlen) {
@@ -74,11 +82,11 @@ void run_simulation(int qlen, int dlen) {
 
     printf("The first item in event_list: %d %d %f\n", event_list->id, event_list->arrival_time, event_list->cpu_request);
 
-    for(tick = 0; tick < 20; tick++) {
+    for(tick = 0; tick < 30; tick++) {
         printf("[%05d] ", tick); // start by outputting the tick...
 
-        if (tick == event_list->arrival_time) {
-            puts("adding a task to the ready queue");
+        if (event_list != NULL && tick == event_list->arrival_time) {
+            printf("adding a task to the ready queue   ");
 
             taskval_t *temp_task;
             temp_task = new_task();
@@ -91,7 +99,7 @@ void run_simulation(int qlen, int dlen) {
             event_list = remove_front(event_list);
         }
 
-        simulate(ready_q); // output will finish here.
+        ready_q = simulate(ready_q); // output will finish here.
     }
 }
 
