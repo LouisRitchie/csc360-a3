@@ -4,3 +4,4 @@
 !*.sh
 !.gitignore
 !makefile
+!test[1|2]
