@@ -8,7 +8,8 @@
 
 taskval_t *event_list = NULL;
 
-int tick, quantum_size, dispatch_size; // all will be initialized in run_simulation fn
+int tick=0;
+int quantum_size, dispatch_size; // all will be initialized in run_simulation fn
 int d_count = 0; // keep track of ticks that have been spent dispatching.
 int q_count = 0; // keep track of ticks that have been spent in a quantum.
 
@@ -83,8 +84,15 @@ taskval_t *simulate(taskval_t *ready_q) {
             if (task == NULL) {
                 puts("IDLE");
             } else {
-                puts("DISPATCHING");
-                status = 1;
+                if (dispatch_size == 0) {
+                    status = 2;
+                    printf("id=%05d req=%.2f used=%.2f\n", task->id, task->cpu_request, task->cpu_used);
+                    task->cpu_used++;
+                    q_count++;
+                } else {
+                    puts("DISPATCHING");
+                    status = 1;
+                }
             }
             break;
     }
@@ -97,7 +105,7 @@ void run_simulation(int qlen, int dlen) {
     dispatch_size = dlen;
     quantum_size = qlen;
 
-    for(tick = 0; tick < 30; tick++) {
+    while (event_list != NULL) {
         printf("[%05d] ", tick); // start by outputting the tick...
 
         if (event_list != NULL && tick == event_list->arrival_time) {
@@ -118,6 +126,7 @@ void run_simulation(int qlen, int dlen) {
         }
 
         ready_q = simulate(ready_q); // output will finish here.
+        tick++;
     }
 }
 
