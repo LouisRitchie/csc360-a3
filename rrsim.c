@@ -122,8 +122,9 @@ void run_simulation(int qlen, int dlen) {
     taskval_t *ready_q = NULL;
     dispatch_size = dlen;
     quantum_size = qlen;
+    int idle_count = 0;
 
-    while (event_list != NULL) {
+    while (event_list != NULL || idle_count != 2) {
         printf("[%05d] ", tick); // start by outputting the tick...
 
         if (event_list != NULL && tick == event_list->arrival_time) {
@@ -145,6 +146,12 @@ void run_simulation(int qlen, int dlen) {
 
         ready_q = simulate(ready_q); // output will finish here.
         tick++;
+
+        if (status == 0) {
+            idle_count++;
+        } else {
+            idle_count = 0;
+        }
     }
 }
 
