@@ -49,6 +49,15 @@ taskval_t *simulate(taskval_t *ready_q) {
                 printf("id=%05d req=%.2f used=%.2f\n", task->id, task->cpu_request, task->cpu_used);
                 task->cpu_used++;
                 q_count++;
+
+                if (quantum_size == 1) {
+                    taskval_t *task_out = peek_front(ready_q);
+                    ready_q = remove_front(ready_q);
+                    ready_q = add_end(ready_q, task_out);
+
+                    q_count = 0;
+                    status = 0;
+                }
             } else {
                 d_count++;
                 puts("DISPATCHING");
@@ -89,6 +98,15 @@ taskval_t *simulate(taskval_t *ready_q) {
                     printf("id=%05d req=%.2f used=%.2f\n", task->id, task->cpu_request, task->cpu_used);
                     task->cpu_used++;
                     q_count++;
+
+                    if (quantum_size == 1) {
+                        taskval_t *task_out = peek_front(ready_q);
+                        ready_q = remove_front(ready_q);
+                        ready_q = add_end(ready_q, task_out);
+
+                        q_count = 0;
+                        status = 0;
+                    }
                 } else {
                     puts("DISPATCHING");
                     status = 1;
